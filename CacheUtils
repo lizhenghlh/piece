@@ -1,0 +1,108 @@
+import org.ehcache.Cache;
+import org.ehcache.CacheManager;
+import org.ehcache.PersistentCacheManager;
+import org.ehcache.config.Configuration;
+import org.ehcache.config.builders.CacheConfigurationBuilder;
+import org.ehcache.config.builders.CacheManagerBuilder;
+import org.ehcache.config.builders.ResourcePoolsBuilder;
+import org.ehcache.config.units.MemoryUnit;
+import org.ehcache.xml.XmlConfiguration;
+import org.springframework.stereotype.Component;
+
+import java.net.URL;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+//@Component
+public class Utils {
+
+    private static Utils cacheUtils;
+
+    /**
+     * 缓存管理器
+     */
+    private PersistentCacheManager cacheManager = null;
+
+    private Cache<Long, PlayList> playListCache = null;
+
+    private Cache<Long, Patch> patchCache = null;
+
+    private Utils() {
+        // 获取ehcache配置文件路径
+        URL url = CacheUtils.class.getClassLoader().getResource("ehcaches.xml");
+        // 加载ehcache配置文件
+        Configuration xmlConfig = new XmlConfiguration(url);
+        // 获取ehcache管理器
+//        this.cacheManager = CacheManagerBuilder.newCacheManager(xmlConfig);
+//        this.cacheManager.init();
+        this.cacheManager = CacheManagerBuilder.newCacheManagerBuilder().with(CacheManagerBuilder.persistence("./cachesss"))
+                .withCache("playListCache", CacheConfigurationBuilder.newCacheConfigurationBuilder(Long.class,PlayList.class, ResourcePoolsBuilder.newResourcePoolsBuilder().disk(10,MemoryUnit.MB,true)))
+                .build(true);
+
+        playListCache = getCache("playListCache", Long.class, PlayList.class);
+        patchCache = getCache("patchCache", Long.class, Patch.class);
+    }
+
+    public static Utils getInstance() {
+        if (cacheUtils == null) {
+            cacheUtils = new Utils();
+        }
+        return cacheUtils;
+    }
+
+    public PlayList getPlayList(Long id) {
+        return playListCache.get(id);
+    }
+
+    public Patch getPatch(Long id) {
+        return patchCache.get(id);
+    }
+
+    public void putPlayList(PlayList playList) {
+        playListCache.put(playList.getId(), playList);
+    }
+
+    public void putPatch(Patch patch) {
+        patchCache.put(patch.getId(), patch);
+    }
+
+    public PlayList getLatestPlayList() {
+        final Map<Long, PlayList> map = getAllByCache(playListCache);
+        if (null != map && !map.isEmpty()) {
+            final Long latestId = Collections.max(map.keySet());
+            return map.get(latestId);
+        }
+        return PlayList.getDefaultPlayList();
+    }
+
+    /**
+     * 获取EhCahce缓存域
+     *
+     * @param alias     缓存域名称
+     * @param keyType   键类型
+     * @param valueType 值类型
+     * @return
+     */
+    private <K, V> Cache<K, V> getCache(String alias, Class<K> keyType, Class<V> valueType) {
+        return cacheManager.getCache(alias, keyType, valueType);
+    }
+
+    /**
+     * 获取缓存域中的所有键值对
+     *
+     * @return
+     */
+    private <K, V> Map<K, V> getAllByCache(Cache<K, V> cache) {
+        Map<K, V> map = null;
+        if (cache != null) {
+            map = new HashMap<K, V>();
+            // 循环取出缓存域中的键和值
+            for (Cache.Entry<K, V> entry : cache) {
+                map.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return map;
+    }
+
+}
