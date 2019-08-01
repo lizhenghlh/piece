@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.ehcache.org/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.ehcache.org/v3 http://www.ehcache.org/schema/ehcache-core.xsd">
+    <!-- 缓存模板 -->
+    <persistence directory="./caches"/>
+    <cache-template name="cacheTemplate">
+
+        <resources>
+            <!--<heap unit="entries">1</heap>-->
+            <!--<offheap unit="B">1</offheap>-->
+            <disk persistent="true" unit="MB">10</disk>
+        </resources>
+    </cache-template>
+
+    <cache alias="playListCache" uses-template="cacheTemplate">
+        <key-type>java.lang.Long</key-type>
+        <value-type serializer="org.ehcache.impl.serialization.PlainJavaSerializer">com.joinu.ad.entity.PlayList</value-type>
+        <expiry>
+            <!-- 永久有效 -->
+            <none/>
+        </expiry>
+    </cache>
+
+    <cache alias="patchCache" uses-template="cacheTemplate">
+        <key-type>java.lang.Long</key-type>
+        <value-type serializer="org.ehcache.impl.serialization.PlainJavaSerializer">com.joinu.ad.entity.Patch</value-type>
+        <expiry>
+            <!-- 永久有效 -->
+            <none/>
+        </expiry>
+    </cache>
+</config>
